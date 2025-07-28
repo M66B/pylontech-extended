@@ -30,7 +30,11 @@ void PylontechComponent::dump_config() {
 
 void PylontechComponent::setup() {
   // https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/
-  esp_task_wdt_init(WDT_TIMEOUT, true); // many sensor definitions!
+  esp_task_wdt_config_t config;
+  config.timeout_ms = WDT_TIMEOUT * 1000;
+  config.idle_core_mask = 0;
+  config.trigger_panic = true;
+  esp_task_wdt_init(&config); // many sensor definitions!
 
   ESP_LOGCONFIG(TAG, "Setting up pylontech...");
   while (this->available() != 0) {
