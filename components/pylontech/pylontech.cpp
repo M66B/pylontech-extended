@@ -86,9 +86,13 @@ void PylontechComponent::loop() {
 void PylontechComponent::process_line_(int cmd, std::string &buffer) {
   ESP_LOGV(TAG, "Read from serial: %s", buffer.substr(0, buffer.size() - 2).c_str());
   // clang-format off
-  // example line to parse:
+  // US5000 example line to parse:
   // Power Volt  Curr Tempr Tlow  Thigh  Vlow Vhigh Base.St Volt.St Curr.St Temp.St Coulomb Time                B.V.St B.T.St MosTempr M.T.St
   // 1    50548  8910 25000 24200 25000  3368 3371  Charge  Normal  Normal  Normal  97%     2021-06-30 20:49:45 Normal Normal 22700    Normal
+  //
+  // Pelio example line to parse:
+  // Power Volt   Curr   Tempr  Tlow   Thigh  Vlow   Vhigh  Base.St  Volt.St  Curr.St  Temp.St  Coulomb  Time                 B.V.St   B.CT.St  B.DT.St  MosTempr M.T.St  \r\r\n"
+  // 1     51584  -19496 28400  21900  23200  3222   3226   Dischg   Normal   Normal   Normal   32%      2025-07-30 05:33:25  Normal   Normal   Normal   24"
   // clang-format on
 
     ESP_LOGD(TAG, "Line command %d", cmd);
@@ -97,9 +101,9 @@ void PylontechComponent::process_line_(int cmd, std::string &buffer) {
     l.cell_num = 0;
     char mostempr_s[6];
     const int parsed = sscanf(                                                                                   // NOLINT
-        buffer.c_str(), "%d %d %d %d %d %d %d %d %7s %7s %7s %7s %d%% %*d-%*d-%*d %*d:%*d:%*d %*s %*s %5s %*s",  // NOLINT
+        buffer.c_str(), "%d %d %d %d %d %d %d %d %7s %7s %7s %7s %d%% %*d-%*d-%*d %*d:%*d:%*d %*s %*s %*s %5s %*s",  // NOLINT
         &l.bat_num, &l.volt, &l.curr, &l.tempr, &l.tlow, &l.thigh, &l.vlow, &l.vhigh, l.base_st, l.volt_st,      // NOLINT
-        l.curr_st, l.temp_st, &l.coulomb, mostempr_s);                                                           // NOLINT
+        l.curr_st, l.ctemp_st, &l.coulomb, mostempr_s);                                                           // NOLINT
 
     if (l.bat_num <= 0) {
       ESP_LOGD(TAG, "invalid bat_num in line %s", buffer.substr(0, buffer.size() - 2).c_str());
@@ -122,18 +126,23 @@ void PylontechComponent::process_line_(int cmd, std::string &buffer) {
     }
   } else {
     PylontechListener::LineContents l{};
+    // US5000:
     // Battery  Volt     Curr     Tempr    Base State   Volt. State  Curr. State  Temp. State  SOC          Coulomb      BAL         \r\r\n
     // 0        3292     -196     19100    Dischg       Normal       Normal       Normal       33%         32715 mAH      N\r\r\n
+    //
+    // Pelio:
+    // Battery  Volt     Curr     Tempr    Base State   Volt. State  Curr. State  CTemp. State DTemp. State SOC          Coulomb      BAL         \r\r\n
+    // 0        3228     -19791   23200    Dischg       Normal       Normal       Normal       Normal       33%         33139 mAH      N\r\r\n
     l.bat_num = cmd;
     const int parsed = sscanf(
-        buffer.c_str(), "%d %d %d %d %7s %7s %7s %7s %d%% %*d mAH %s",
-        &l.cell_num, &l.volt, &l.curr, &l.tempr, l.base_st, l.volt_st, l.curr_st, l.temp_st, &l.coulomb, &l.bal);
+        buffer.c_str(), "%d %d %d %d %7s %7s %7s %7s %7s %d%% %*d mAH %s",
+        &l.cell_num, &l.volt, &l.curr, &l.tempr, l.base_st, l.volt_st, l.curr_st, l.ctemp_st, l.dtemp_st, &l.coulomb, l.bal);
     l.cell_num++;
     if (l.cell_num <= 0) {
       ESP_LOGD(TAG, "invalid cell number in line %s", buffer.substr(0, buffer.size() - 2).c_str());
       return;
     }
-    if (parsed != 10) {
+    if (parsed != 11) {
       ESP_LOGW(TAG, "invalid line: found only %d items in %s", parsed, buffer.substr(0, buffer.size() - 2).c_str());
       return;
     }

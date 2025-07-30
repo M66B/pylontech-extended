@@ -15,7 +15,7 @@ class PylontechListener {
   struct LineContents {
     int bat_num = 0, cell_num = 0, volt, curr, tempr, tlow, thigh, vlow, vhigh, coulomb, mostempr;
     char base_st[TEXT_SENSOR_MAX_LEN], volt_st[TEXT_SENSOR_MAX_LEN], curr_st[TEXT_SENSOR_MAX_LEN],
-        temp_st[TEXT_SENSOR_MAX_LEN], bal[TEXT_SENSOR_MAX_LEN];
+        ctemp_st[TEXT_SENSOR_MAX_LEN], dtemp_st[TEXT_SENSOR_MAX_LEN], bal[TEXT_SENSOR_MAX_LEN];
   };
 
   virtual void on_line_read(LineContents *line);

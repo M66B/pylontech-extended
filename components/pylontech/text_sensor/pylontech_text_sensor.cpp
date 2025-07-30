@@ -38,7 +38,7 @@ void PylontechTextSensor::on_line_read(PylontechListener::LineContents *line) {
     this->current_state_text_sensor_->publish_state(std::string(line->curr_st));
   }
   if (this->temperature_state_text_sensor_ != nullptr) {
-    this->temperature_state_text_sensor_->publish_state(std::string(line->temp_st));
+    this->temperature_state_text_sensor_->publish_state(std::string(line->ctemp_st));
   }
   if (this->balance_text_sensor_ != nullptr) {
     this->balance_text_sensor_->publish_state(std::string(line->bal));
